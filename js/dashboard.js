@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
     const user = checkAuth();
     
-    // Load videos from localStorage
+    // Load videos from IndexedDB
     loadVideos();
     
     // Update stats
@@ -28,7 +28,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function loadVideos() {
+async function loadVideos() {
+    try {
+        const db = await openVideoDatabase();
+        const videos = await getAllVideos(db);
+        
+        const videoGrid = document.getElementById('videoGrid');
+        
+        if (videos.length === 0) {
+            videoGrid.innerHTML = `
+                <div class="empty-state">
+                    <svg width="100" height="100" fill="none" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="2"/>
+                        <path d="M40 35L65 50L40 65V35Z" fill="#9ca3af"/>
+                    </svg>
+                    <h3>还没有视频</h3>
+                    <p>点击上传按钮开始上传您的第一个视频</p>
+                    <a href="upload.html" class="btn btn-primary">立即上传</a>
+                </div>
+            `;
+        } else {
+            videoGrid.innerHTML = videos.map(video => `
+                <div class="video-card" onclick="playVideo('${video.id}')">
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}">
+                        <span class="video-duration">${video.duration || '00:00'}</span>
+                    </div>
+                    <div class="video-card-info">
+                        <h3 class="video-card-title">${video.title}</h3>
+                        <div class="video-card-meta">
+                            <span>${video.views || 0} 次播放</span>
+                            <span>${formatDate(video.uploadDate)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading videos:', error);
+        // Fallback to localStorage
+        loadVideosFromLocalStorage();
+    }
+}
+
+function loadVideosFromLocalStorage() {
     const videos = JSON.parse(localStorage.getItem('videos') || '[]');
     const videoGrid = document.getElementById('videoGrid');
     
@@ -63,19 +106,31 @@ function loadVideos() {
     }
 }
 
-function updateStats() {
-    const videos = JSON.parse(localStorage.getItem('videos') || '[]');
-    
-    // Total videos
-    document.getElementById('totalVideos').textContent = videos.length;
-    
-    // Total views
-    const totalViews = videos.reduce((sum, video) => sum + (video.views || 0), 0);
-    document.getElementById('totalViews').textContent = totalViews.toLocaleString();
-    
-    // Total storage (approximate)
-    const totalStorage = videos.reduce((sum, video) => sum + (video.size || 0), 0);
-    document.getElementById('totalStorage').textContent = formatFileSize(totalStorage);
+async function updateStats() {
+    try {
+        const db = await openVideoDatabase();
+        const videos = await getAllVideos(db);
+        
+        // Total videos
+        document.getElementById('totalVideos').textContent = videos.length;
+        
+        // Total views
+        const totalViews = videos.reduce((sum, video) => sum + (video.views || 0), 0);
+        document.getElementById('totalViews').textContent = totalViews.toLocaleString();
+        
+        // Total storage (approximate)
+        const totalStorage = videos.reduce((sum, video) => sum + (video.size || 0), 0);
+        document.getElementById('totalStorage').textContent = formatFileSize(totalStorage);
+    } catch (error) {
+        console.error('Error updating stats:', error);
+        // Fallback to localStorage
+        const videos = JSON.parse(localStorage.getItem('videos') || '[]');
+        document.getElementById('totalVideos').textContent = videos.length;
+        const totalViews = videos.reduce((sum, video) => sum + (video.views || 0), 0);
+        document.getElementById('totalViews').textContent = totalViews.toLocaleString();
+        const totalStorage = videos.reduce((sum, video) => sum + (video.size || 0), 0);
+        document.getElementById('totalStorage').textContent = formatFileSize(totalStorage);
+    }
 }
 
 function playVideo(videoId) {
@@ -102,4 +157,34 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+// IndexedDB helper functions
+function openVideoDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('VideoDatabase', 2);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('videos')) {
+                db.createObjectStore('videos', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('metadata')) {
+                const metaStore = db.createObjectStore('metadata', { keyPath: 'id' });
+                metaStore.createIndex('uploadDate', 'uploadDate', { unique: false });
+            }
+        };
+    });
+}
+
+function getAllVideos(db) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['metadata'], 'readonly');
+        const store = transaction.objectStore('metadata');
+        const request = store.getAll();
+        
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+    });
 }

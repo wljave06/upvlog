@@ -180,21 +180,19 @@ async function saveVideo(title, description, category, visibility) {
         reader.onload = async function(e) {
             video.url = e.target.result;
             
-            // Save video data to IndexedDB
+            // Save video data and metadata to IndexedDB (avoid localStorage quota)
             try {
                 const db = await openVideoDatabase();
                 await saveToIndexedDB(db, videoId, e.target.result);
+                
+                // Save metadata separately in IndexedDB
+                await saveVideoMetadata(db, video);
+                
             } catch (dbError) {
-                console.warn('IndexedDB error, using localStorage:', dbError);
-                localStorage.setItem('video_' + videoId, e.target.result);
+                console.error('Storage error:', dbError);
+                alert('存储空间不足或浏览器不支持。请尝试：\n1. 清理浏览器缓存\n2. 使用更小的视频文件');
+                return;
             }
-            
-            // Get existing videos
-            const videos = JSON.parse(localStorage.getItem('videos') || '[]');
-            videos.unshift(video);
-            
-            // Save metadata to localStorage
-            localStorage.setItem('videos', JSON.stringify(videos));
             
             // Generate shareable URL
             const shareUrl = `${window.location.origin}/player.html?id=${videoId}`;
@@ -231,15 +229,23 @@ ${shareUrl}
 // IndexedDB helper functions for Cloudflare Pages
 function openVideoDatabase() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('VideoDatabase', 1);
+        const request = indexedDB.open('VideoDatabase', 2);
         
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
         
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
+            
+            // Create videos store for video data
             if (!db.objectStoreNames.contains('videos')) {
                 db.createObjectStore('videos', { keyPath: 'id' });
+            }
+            
+            // Create metadata store for video metadata
+            if (!db.objectStoreNames.contains('metadata')) {
+                const metaStore = db.createObjectStore('metadata', { keyPath: 'id' });
+                metaStore.createIndex('uploadDate', 'uploadDate', { unique: false });
             }
         };
     });
@@ -250,6 +256,17 @@ function saveToIndexedDB(db, videoId, videoData) {
         const transaction = db.transaction(['videos'], 'readwrite');
         const store = transaction.objectStore('videos');
         const request = store.put({ id: videoId, data: videoData });
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function saveVideoMetadata(db, video) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['metadata'], 'readwrite');
+        const store = transaction.objectStore('metadata');
+        const request = store.put(video);
         
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);

@@ -18,27 +18,28 @@ document.addEventListener('DOMContentLoaded', function() {
     loadRelatedVideos(videoId);
 });
 
-function loadVideo(videoId) {
-    const videos = JSON.parse(localStorage.getItem('videos') || '[]');
-    const video = videos.find(v => v.id === videoId);
-    
-    if (!video) {
-        document.getElementById('videoTitle').textContent = '未找到视频';
-        document.getElementById('videoDescription').textContent = '请从视频列表中选择要播放的视频。';
-        return;
-    }
-    
-    // Update video info
-    document.getElementById('videoTitle').textContent = video.title;
-    document.getElementById('videoDescription').textContent = video.description || '暂无描述';
-    document.getElementById('videoViews').textContent = (video.views || 0) + ' 次播放';
-    document.getElementById('videoDate').textContent = formatDate(video.uploadDate);
-    
-    // Load video source
-    const mainPlayer = document.getElementById('mainPlayer');
-    
-    // Try to load from IndexedDB first, then localStorage
-    loadVideoData(videoId).then(videoData => {
+async function loadVideo(videoId) {
+    try {
+        const db = await openVideoDatabase();
+        const video = await getVideoMetadata(db, videoId);
+        
+        if (!video) {
+            document.getElementById('videoTitle').textContent = '未找到视频';
+            document.getElementById('videoDescription').textContent = '请从视频列表中选择要播放的视频。';
+            return;
+        }
+        
+        // Update video info
+        document.getElementById('videoTitle').textContent = video.title;
+        document.getElementById('videoDescription').textContent = video.description || '暂无描述';
+        document.getElementById('videoViews').textContent = (video.views || 0) + ' 次播放';
+        document.getElementById('videoDate').textContent = formatDate(video.uploadDate);
+        
+        // Load video source
+        const mainPlayer = document.getElementById('mainPlayer');
+        
+        // Load from IndexedDB
+        const videoData = await loadVideoData(db, videoId);
         if (videoData) {
             mainPlayer.src = videoData;
         } else if (video.url) {
@@ -46,22 +47,23 @@ function loadVideo(videoId) {
         } else {
             mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
         }
-    });
-    
-    // Update view count
-    video.views = (video.views || 0) + 1;
-    const videoIndex = videos.findIndex(v => v.id === videoId);
-    videos[videoIndex] = video;
-    localStorage.setItem('videos', JSON.stringify(videos));
-    
-    // Update view display
-    document.getElementById('videoViews').textContent = video.views + ' 次播放';
+        
+        // Update view count
+        video.views = (video.views || 0) + 1;
+        await updateVideoMetadata(db, video);
+        
+        // Update view display
+        document.getElementById('videoViews').textContent = video.views + ' 次播放';
+    } catch (error) {
+        console.error('Error loading video:', error);
+        document.getElementById('videoTitle').textContent = '加载视频失败';
+        document.getElementById('videoDescription').textContent = '请检查浏览器存储权限';
+    }
 }
 
-// Load video data from IndexedDB or localStorage
-async function loadVideoData(videoId) {
+// Load video data from IndexedDB
+async function loadVideoData(db, videoId) {
     try {
-        const db = await openVideoDatabase();
         const transaction = db.transaction(['videos'], 'readonly');
         const store = transaction.objectStore('videos');
         const request = store.get(videoId);
@@ -71,31 +73,52 @@ async function loadVideoData(videoId) {
                 if (request.result) {
                     resolve(request.result.data);
                 } else {
-                    // Fallback to localStorage
-                    resolve(localStorage.getItem('video_' + videoId));
+                    resolve(null);
                 }
             };
-            request.onerror = () => {
-                // Fallback to localStorage
-                resolve(localStorage.getItem('video_' + videoId));
-            };
+            request.onerror = () => resolve(null);
         });
     } catch (error) {
-        // Fallback to localStorage
-        return localStorage.getItem('video_' + videoId);
+        return null;
     }
+}
+
+function getVideoMetadata(db, videoId) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['metadata'], 'readonly');
+        const store = transaction.objectStore('metadata');
+        const request = store.get(videoId);
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function updateVideoMetadata(db, video) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['metadata'], 'readwrite');
+        const store = transaction.objectStore('metadata');
+        const request = store.put(video);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
 }
 
 // IndexedDB helper
 function openVideoDatabase() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('VideoDatabase', 1);
+        const request = indexedDB.open('VideoDatabase', 2);
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             if (!db.objectStoreNames.contains('videos')) {
                 db.createObjectStore('videos', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('metadata')) {
+                const metaStore = db.createObjectStore('metadata', { keyPath: 'id' });
+                metaStore.createIndex('uploadDate', 'uploadDate', { unique: false });
             }
         };
     });
