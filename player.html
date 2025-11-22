@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频播放 - 视频平台</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <svg width="40" height="40" viewBox="0 0 60 60" fill="none">
+                    <rect width="60" height="60" rx="12" fill="#6366f1"/>
+                    <path d="M20 18L42 30L20 42V18Z" fill="white"/>
+                </svg>
+                <span>视频平台</span>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                    </svg>
+                    <span>首页</span>
+                </a>
+                <a href="upload.html" class="nav-item">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>上传</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                    <span>我的视频</span>
+                </a>
+            </div>
+            
+            <div class="nav-user">
+                <div class="user-avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="User">
+                </div>
+                <div class="user-menu">
+                    <a href="#">个人设置</a>
+                    <a href="#" id="logoutBtn">退出登录</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content player-page">
+        <div class="container-wide">
+            <div class="player-layout">
+                <div class="player-main">
+                    <div class="video-player">
+                        <video id="mainPlayer" controls>
+                            <source src="" type="video/mp4">
+                            您的浏览器不支持视频播放
+                        </video>
+                    </div>
+                    
+                    <div class="video-info">
+                        <h1 id="videoTitle">视频标题</h1>
+                        <div class="video-meta">
+                            <div class="meta-left">
+                                <span id="videoViews">0 次播放</span>
+                                <span id="videoDate">2024-01-01</span>
+                            </div>
+                            <div class="meta-right">
+                                <button class="action-btn">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/>
+                                    </svg>
+                                    <span>点赞</span>
+                                </button>
+                                <button class="action-btn">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+                                    </svg>
+                                    <span>分享</span>
+                                </button>
+                                <button class="action-btn">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                                    </svg>
+                                    <span>收藏</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="video-description">
+                            <h3>视频描述</h3>
+                            <p id="videoDescription">这里是视频的详细描述信息...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="player-sidebar">
+                    <h3>相关视频</h3>
+                    <div class="related-videos" id="relatedVideos">
+                        <!-- Related videos will be loaded here -->
+                        <div class="empty-state-small">
+                            <p>暂无相关视频</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="js/player.js"></script>
+</body>
+</html>

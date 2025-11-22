@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频平台 - 上传视频</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <svg width="40" height="40" viewBox="0 0 60 60" fill="none">
+                    <rect width="60" height="60" rx="12" fill="#6366f1"/>
+                    <path d="M20 18L42 30L20 42V18Z" fill="white"/>
+                </svg>
+                <span>视频平台</span>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                    </svg>
+                    <span>首页</span>
+                </a>
+                <a href="upload.html" class="nav-item active">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>上传</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                    <span>我的视频</span>
+                </a>
+            </div>
+            
+            <div class="nav-user">
+                <div class="user-avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="User">
+                </div>
+                <div class="user-menu">
+                    <a href="#">个人设置</a>
+                    <a href="#" id="logoutBtn">退出登录</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>上传视频</h1>
+            </div>
+            
+            <div class="upload-container">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="videoInput" accept="video/*" hidden>
+                    <div class="upload-icon">
+                        <svg width="80" height="80" fill="none" viewBox="0 0 80 80">
+                            <circle cx="40" cy="40" r="35" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4"/>
+                            <path d="M40 25V55M25 40H55" stroke="#6366f1" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3>拖拽视频文件到这里</h3>
+                    <p>或者</p>
+                    <button type="button" class="btn btn-primary" id="selectFileBtn">选择文件</button>
+                    <p class="upload-hint">支持格式: MP4, MOV, AVI, MKV (最大 500MB)</p>
+                </div>
+                
+                <div class="upload-preview" id="uploadPreview" style="display: none;">
+                    <div class="preview-video">
+                        <video id="previewPlayer" controls></video>
+                    </div>
+                    
+                    <div class="upload-form">
+                        <div class="form-group">
+                            <label for="videoTitle">视频标题 *</label>
+                            <input type="text" id="videoTitle" placeholder="输入视频标题" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="videoDescription">视频描述</label>
+                            <textarea id="videoDescription" rows="4" placeholder="输入视频描述（可选）"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="videoCategory">分类</label>
+                                <select id="videoCategory">
+                                    <option value="entertainment">娱乐</option>
+                                    <option value="education">教育</option>
+                                    <option value="gaming">游戏</option>
+                                    <option value="music">音乐</option>
+                                    <option value="sports">体育</option>
+                                    <option value="technology">科技</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="videoVisibility">可见性</label>
+                                <select id="videoVisibility">
+                                    <option value="public">公开</option>
+                                    <option value="unlisted">不公开（仅链接）</option>
+                                    <option value="private">私密</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span id="progressText">上传中...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+                            <button type="button" class="btn btn-primary" id="uploadBtn">开始上传</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="js/upload.js"></script>
+</body>
+</html>

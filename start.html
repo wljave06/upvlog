@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速开始 - 视频平台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #6366f1;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        .steps {
+            margin: 30px 0;
+        }
+        .step {
+            background: #f8fafc;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #1e293b;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #6366f1;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature {
+            background: #f0fdf4;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #10b981;
+        }
+        .feature strong {
+            color: #059669;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #e11d48;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 视频平台快速开始</h1>
+        <p class="subtitle">一个功能完整的视频上传和播放平台，适合部署到 Cloudflare Pages</p>
+        
+        <div class="feature-list">
+            <div class="feature">
+                <strong>✓</strong> 用户登录
+            </div>
+            <div class="feature">
+                <strong>✓</strong> 视频上传
+            </div>
+            <div class="feature">
+                <strong>✓</strong> 拖拽上传
+            </div>
+            <div class="feature">
+                <strong>✓</strong> 视频播放
+            </div>
+            <div class="feature">
+                <strong>✓</strong> 响应式设计
+            </div>
+            <div class="feature">
+                <strong>✓</strong> 现代 UI
+            </div>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <h3>📖 步骤 1: 本地测试</h3>
+                <p>在终端运行以下命令启动本地服务器：</p>
+                <code>python -m http.server 8000</code> 或 <code>npx http-server</code>
+                <br><br>
+                <p>然后在浏览器访问：<code>http://localhost:8000</code></p>
+            </div>
+
+            <div class="step">
+                <h3>🔐 步骤 2: 登录系统</h3>
+                <p>演示模式下，输入任意用户名和密码即可登录</p>
+                <a href="index.html" class="btn">前往登录页面</a>
+            </div>
+
+            <div class="step">
+                <h3>📤 步骤 3: 上传视频</h3>
+                <p>登录后，您可以：</p>
+                <ul>
+                    <li>点击上传按钮选择视频文件</li>
+                    <li>或直接拖拽视频文件到上传区域</li>
+                    <li>支持格式：MP4, MOV, AVI, MKV（最大 500MB）</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>🚀 步骤 4: 部署到 Cloudflare</h3>
+                <p><strong>方法 1: Git 部署（推荐）</strong></p>
+                <ol>
+                    <li>将代码推送到 GitHub/GitLab</li>
+                    <li>登录 Cloudflare Dashboard → Pages</li>
+                    <li>连接 Git 仓库并部署</li>
+                </ol>
+                
+                <p><strong>方法 2: 直接上传</strong></p>
+                <ol>
+                    <li>登录 Cloudflare Dashboard → Pages</li>
+                    <li>选择 "Upload assets"</li>
+                    <li>上传整个项目文件夹</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 重要提示：</strong><br>
+            当前版本使用 localStorage 存储视频（仅用于演示）。<br>
+            对于生产环境，强烈建议使用 <strong>Cloudflare R2</strong> 或其他云存储服务来存储视频文件。<br>
+            详见 <code>README.md</code> 文件中的部署指南。
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="index.html" class="btn">🎬 开始使用</a>
+            <a href="README.md" class="btn" style="background: #64748b;">📚 查看文档</a>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center;">
+            <p>项目结构完整 | 即开即用 | 部署简单</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto redirect if running from file:// protocol
+        if (window.location.protocol === 'file:') {
+            document.body.innerHTML += `
+                <div style="position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 15px; text-align: center; z-index: 9999;">
+                    <strong>⚠️ 请使用本地服务器运行此项目！</strong> 
+                    使用命令：<code style="background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 4px; margin: 0 5px;">python -m http.server 8000</code>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

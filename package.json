@@ -1,0 +1,21 @@
+{
+  "name": "vlog-platform",
+  "version": "1.0.0",
+  "description": "Video upload platform for Cloudflare Pages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "video",
+    "upload",
+    "cloudflare",
+    "pages"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "formidable": "^3.5.1"
+  }
+}

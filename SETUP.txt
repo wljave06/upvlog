@@ -1,0 +1,128 @@
+========================================
+VIDEO UPLOAD PLATFORM - SETUP GUIDE
+========================================
+
+🚀 QUICK START - LOCAL DEVELOPMENT
+========================================
+
+1. Install Node.js dependencies:
+   npm install
+
+2. Start the development server:
+   npm start
+
+3. Open browser:
+   http://localhost:8000
+
+4. Login with any username/password
+
+5. Upload videos - they will be saved to videos/ folder!
+
+✅ Features enabled:
+   - Real file uploads to videos/ folder
+   - Video streaming support
+   - Range requests for seeking
+   - Up to 500MB per video
+
+========================================
+📤 CLOUDFLARE DEPLOYMENT
+========================================
+
+OPTION 1: With R2 Storage (Production - Recommended)
+-----------------------------------------------------
+1. Create R2 bucket:
+   npx wrangler r2 bucket create vlog-videos
+
+2. Push to GitHub/GitLab
+
+3. Deploy via Cloudflare Dashboard:
+   - Pages -> Create project
+   - Connect Git repository
+   - Build settings: leave empty
+   - Deploy
+
+4. Add R2 binding in Pages settings:
+   - Functions tab
+   - R2 bucket bindings
+   - Variable: VIDEO_BUCKET
+   - Bucket: vlog-videos
+
+5. Done! Videos will be uploaded to R2 automatically
+
+
+OPTION 2: Direct Upload (Static Files Only)
+---------------------------------------------
+1. Go to Cloudflare Pages -> Upload assets
+2. Upload all files
+3. Note: This won't support actual file uploads,
+   only demo mode with localStorage
+
+========================================
+📁 PROJECT STRUCTURE
+========================================
+
+vlog/
+├── index.html              # Login page
+├── dashboard.html          # Video dashboard
+├── upload.html            # Upload page
+├── player.html            # Video player
+├── server.js              # Local dev server (NEW!)
+├── package.json           # Node.js config (NEW!)
+├── wrangler.toml          # Cloudflare config (NEW!)
+├── functions/             # Cloudflare Functions (NEW!)
+│   ├── api/
+│   │   └── upload.js     # Upload handler
+│   └── videos/
+│       └── [filename].js # Video serving
+├── css/
+│   └── style.css
+├── js/
+│   ├── auth.js
+│   ├── dashboard.js
+│   ├── upload.js         # Updated with real upload
+│   └── player.js         # Updated to load from server
+└── videos/                # Video storage folder
+
+========================================
+🎯 HOW IT WORKS
+========================================
+
+LOCAL DEVELOPMENT:
+- Videos uploaded via /api/upload endpoint
+- Files saved to videos/ folder
+- Served with streaming support
+
+PRODUCTION (Cloudflare):
+- Videos uploaded to R2 bucket
+- Served via CDN with caching
+- Automatic streaming support
+
+FALLBACK:
+- If upload fails, uses localStorage
+- Demo mode only (limited storage)
+
+========================================
+⚙️ CONFIGURATION
+========================================
+
+Max file size: 500MB (configurable)
+Supported formats: MP4, MOV, AVI, MKV, WebM, OGG
+
+To change limits, edit:
+- server.js: maxFileSize
+- js/upload.js: maxSize
+- wrangler.toml: MAX_VIDEO_SIZE
+
+========================================
+📝 NOTES
+========================================
+
+- Login is demo mode (any username/password)
+- For production: add real authentication
+- R2 storage has generous free tier
+- Videos are served with range request support
+  for smooth seeking/scrubbing
+
+========================================
+Need help? Check README.md for details!
+========================================
