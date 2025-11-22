@@ -174,54 +174,84 @@ async function saveVideo(title, description, category, visibility) {
     };
     
     try {
-        // Upload video file to local server
-        const formData = new FormData();
-        formData.append('video', selectedFile);
-        formData.append('videoId', videoId);
-        formData.append('metadata', JSON.stringify(video));
+        // For Cloudflare Pages: Store video in IndexedDB
+        const reader = new FileReader();
         
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!response.ok) {
-            throw new Error('Upload failed: ' + response.statusText);
-        }
-        
-        const result = await response.json();
-        video.url = result.url; // Get uploaded video URL from server
-        video.publicUrl = result.publicUrl; // Get public access URL
-        
-        // Get existing videos
-        const videos = JSON.parse(localStorage.getItem('videos') || '[]');
-        videos.unshift(video);
-        
-        // Save metadata to localStorage
-        localStorage.setItem('videos', JSON.stringify(videos));
-        
-        // Show success with public URL
-        const message = `视频上传成功！
+        reader.onload = async function(e) {
+            video.url = e.target.result;
+            
+            // Save video data to IndexedDB
+            try {
+                const db = await openVideoDatabase();
+                await saveToIndexedDB(db, videoId, e.target.result);
+            } catch (dbError) {
+                console.warn('IndexedDB error, using localStorage:', dbError);
+                localStorage.setItem('video_' + videoId, e.target.result);
+            }
+            
+            // Get existing videos
+            const videos = JSON.parse(localStorage.getItem('videos') || '[]');
+            videos.unshift(video);
+            
+            // Save metadata to localStorage
+            localStorage.setItem('videos', JSON.stringify(videos));
+            
+            // Generate shareable URL
+            const shareUrl = `${window.location.origin}/player.html?id=${videoId}`;
+            
+            // Show success with share URL
+            const message = `视频上传成功！
 
-公开访问地址：
-${result.publicUrl}
+分享链接：
+${shareUrl}
 
 点击确定跳转到视频列表`;
-        alert(message);
+            alert(message);
+            
+            // Copy URL to clipboard
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareUrl).catch(() => {});
+            }
+            
+            window.location.href = 'dashboard.html';
+        };
         
-        // Copy URL to clipboard if available
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(result.publicUrl).then(() => {
-                console.log('公开URL已复制到剪贴板:', result.publicUrl);
-            }).catch(err => {
-                console.log('无法复制到剪贴板:', err);
-            });
-        }
+        reader.onerror = function() {
+            alert('读取视频文件失败');
+        };
         
-        window.location.href = 'dashboard.html';
+        reader.readAsDataURL(selectedFile);
         
     } catch (error) {
         console.error('Upload error:', error);
-        alert('上传失败: ' + error.message + '\n\n请确保已启动本地服务器 (npm start)');
+        alert('上传失败: ' + error.message);
     }
+}
+
+// IndexedDB helper functions for Cloudflare Pages
+function openVideoDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('VideoDatabase', 1);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('videos')) {
+                db.createObjectStore('videos', { keyPath: 'id' });
+            }
+        };
+    });
+}
+
+function saveToIndexedDB(db, videoId, videoData) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['videos'], 'readwrite');
+        const store = transaction.objectStore('videos');
+        const request = store.put({ id: videoId, data: videoData });
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
 }

@@ -37,19 +37,16 @@ function loadVideo(videoId) {
     // Load video source
     const mainPlayer = document.getElementById('mainPlayer');
     
-    // Try to load from server first
-    if (video.url) {
-        mainPlayer.src = video.url;
-    } else {
-        // Fallback to localStorage
-        const videoData = localStorage.getItem('video_' + videoId);
+    // Try to load from IndexedDB first, then localStorage
+    loadVideoData(videoId).then(videoData => {
         if (videoData) {
             mainPlayer.src = videoData;
+        } else if (video.url) {
+            mainPlayer.src = video.url;
         } else {
-            // Try to fetch from server
-            mainPlayer.src = `/videos/${video.filename}`;
+            mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
         }
-    }
+    });
     
     // Update view count
     video.views = (video.views || 0) + 1;
@@ -59,6 +56,49 @@ function loadVideo(videoId) {
     
     // Update view display
     document.getElementById('videoViews').textContent = video.views + ' 次播放';
+}
+
+// Load video data from IndexedDB or localStorage
+async function loadVideoData(videoId) {
+    try {
+        const db = await openVideoDatabase();
+        const transaction = db.transaction(['videos'], 'readonly');
+        const store = transaction.objectStore('videos');
+        const request = store.get(videoId);
+        
+        return new Promise((resolve) => {
+            request.onsuccess = () => {
+                if (request.result) {
+                    resolve(request.result.data);
+                } else {
+                    // Fallback to localStorage
+                    resolve(localStorage.getItem('video_' + videoId));
+                }
+            };
+            request.onerror = () => {
+                // Fallback to localStorage
+                resolve(localStorage.getItem('video_' + videoId));
+            };
+        });
+    } catch (error) {
+        // Fallback to localStorage
+        return localStorage.getItem('video_' + videoId);
+    }
+}
+
+// IndexedDB helper
+function openVideoDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('VideoDatabase', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('videos')) {
+                db.createObjectStore('videos', { keyPath: 'id' });
+            }
+        };
+    });
 }
 
 function loadRelatedVideos(currentVideoId) {
