@@ -159,6 +159,10 @@ function simulateUpload(title, description, category, visibility) {
 async function saveVideo(title, description, category, visibility) {
     // Create video object
     const videoId = 'video_' + Date.now();
+    
+    // Generate thumbnail from video
+    const thumbnail = await generateVideoThumbnail(selectedFile);
+    
     const video = {
         id: videoId,
         title: title,
@@ -170,7 +174,7 @@ async function saveVideo(title, description, category, visibility) {
         uploadDate: new Date().toISOString(),
         views: 0,
         duration: '00:00',
-        thumbnail: ''
+        thumbnail: thumbnail
     };
     
     // Upload to server for public access
@@ -275,5 +279,53 @@ function saveVideoMetadata(db, video) {
         
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
+    });
+}
+
+// Generate video thumbnail
+function generateVideoThumbnail(file) {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        
+        video.onloadedmetadata = function() {
+            // Seek to 1 second or 10% of video duration
+            video.currentTime = Math.min(1, video.duration * 0.1);
+        };
+        
+        video.onseeked = function() {
+            try {
+                // Set canvas size to video dimensions
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Draw video frame to canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to data URL
+                const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Clean up
+                URL.revokeObjectURL(video.src);
+                
+                resolve(thumbnailDataUrl);
+            } catch (error) {
+                console.error('Thumbnail generation error:', error);
+                resolve(''); // Return empty string on error
+            }
+        };
+        
+        video.onerror = function() {
+            console.error('Video load error');
+            resolve(''); // Return empty string on error
+        };
+        
+        // Load video file
+        video.src = URL.createObjectURL(file);
     });
 }

@@ -50,9 +50,17 @@ async function loadVideos() {
         } else {
             videoGrid.innerHTML = videos.map(video => `
                 <div class="video-card">
-                    <div class="video-thumbnail" onclick="playVideo('${video.id}')" style="cursor: pointer;">
-                        <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}">
+                    <div class="video-thumbnail" onclick="playVideo('${video.id}')" style="cursor: pointer; position: relative;">
+                        <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}" 
+                            onerror="this.src='https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'">
                         <span class="video-duration">${video.duration || '00:00'}</span>
+                        <button onclick="deleteVideo(event, '${video.id}')" 
+                            style="position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 10;"
+                            onmouseover="this.style.background='rgba(220, 38, 38, 1)'" 
+                            onmouseout="this.style.background='rgba(239, 68, 68, 0.9)'" 
+                            title="删除视频">
+                            ×
+                        </button>
                     </div>
                     <div class="video-card-info">
                         <h3 class="video-card-title" onclick="playVideo('${video.id}')" style="cursor: pointer;">${video.title}</h3>
@@ -104,13 +112,21 @@ function loadVideosFromLocalStorage() {
         `;
     } else {
         videoGrid.innerHTML = videos.map(video => `
-            <div class="video-card" onclick="playVideo('${video.id}')">
-                <div class="video-thumbnail">
-                    <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}">
+            <div class="video-card">
+                <div class="video-thumbnail" onclick="playVideo('${video.id}')" style="cursor: pointer; position: relative;">
+                    <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}"
+                        onerror="this.src='https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'">
                     <span class="video-duration">${video.duration || '00:00'}</span>
+                    <button onclick="deleteVideo(event, '${video.id}')" 
+                        style="position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 10;"
+                        onmouseover="this.style.background='rgba(220, 38, 38, 1)'" 
+                        onmouseout="this.style.background='rgba(239, 68, 68, 0.9)'" 
+                        title="删除视频">
+                        ×
+                    </button>
                 </div>
                 <div class="video-card-info">
-                    <h3 class="video-card-title">${video.title}</h3>
+                    <h3 class="video-card-title" onclick="playVideo('${video.id}')" style="cursor: pointer;">${video.title}</h3>
                     <div class="video-card-meta">
                         <span>${video.views || 0} 次播放</span>
                         <span>${formatDate(video.uploadDate)}</span>
@@ -227,4 +243,50 @@ function copyUrl(event, url) {
         // Fallback for older browsers
         alert('链接地址：\n' + url);
     }
+}
+
+// Delete video
+async function deleteVideo(event, videoId) {
+    event.stopPropagation(); // Prevent triggering video play
+    
+    if (!confirm('确定要删除这个视频吗？此操作无法撤销！')) {
+        return;
+    }
+    
+    try {
+        const db = await openVideoDatabase();
+        
+        // Delete from metadata store
+        await deleteFromStore(db, 'metadata', videoId);
+        
+        // Delete from videos store (IndexedDB stored videos)
+        await deleteFromStore(db, 'videos', videoId);
+        
+        // Note: Videos stored in R2 cannot be deleted from client-side
+        // You would need a backend API to delete from R2
+        
+        // Reload the page to refresh the video list
+        alert('视频已删除！');
+        location.reload();
+        
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('删除失败：' + error.message);
+    }
+}
+
+function deleteFromStore(db, storeName, id) {
+    return new Promise((resolve, reject) => {
+        try {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.delete(id);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        } catch (error) {
+            // Store might not exist, that's okay
+            resolve();
+        }
+    });
 }
