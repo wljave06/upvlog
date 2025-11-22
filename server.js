@@ -1,4 +1,5 @@
 // Simple Node.js server for local development with file upload support
+// Saves videos to /videos folder (max 10MB per file)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

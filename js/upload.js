@@ -174,7 +174,7 @@ async function saveVideo(title, description, category, visibility) {
     };
     
     try {
-        // Upload video file to server
+        // Upload video file to local server
         const formData = new FormData();
         formData.append('video', selectedFile);
         formData.append('videoId', videoId);
@@ -190,7 +190,7 @@ async function saveVideo(title, description, category, visibility) {
         }
         
         const result = await response.json();
-        video.url = result.url; // Get uploaded video URL
+        video.url = result.url; // Get uploaded video URL from server
         
         // Get existing videos
         const videos = JSON.parse(localStorage.getItem('videos') || '[]');
@@ -205,20 +205,6 @@ async function saveVideo(title, description, category, visibility) {
         
     } catch (error) {
         console.error('Upload error:', error);
-        
-        // Fallback to localStorage for development
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            video.url = e.target.result;
-            localStorage.setItem('video_' + video.id, e.target.result);
-            
-            const videos = JSON.parse(localStorage.getItem('videos') || '[]');
-            videos.unshift(video);
-            localStorage.setItem('videos', JSON.stringify(videos));
-            
-            alert('视频已保存到本地（开发模式）');
-            window.location.href = 'dashboard.html';
-        };
-        reader.readAsDataURL(selectedFile);
+        alert('上传失败: ' + error.message + '\n\n请确保已启动本地服务器 (npm start)');
     }
 }
