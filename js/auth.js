@@ -1,4 +1,8 @@
 // Authentication handling
+// LOGIN CREDENTIALS (BACKUP):
+// Username: admin
+// Password: muen778@
+
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     
@@ -11,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const remember = document.getElementById('remember').checked;
             
             // Validate credentials
+            // Required: username = 'admin', password = 'muen778@'
             if (username === 'admin' && password === 'muen778@') {
                 // Store user session
                 const user = {
@@ -30,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (!username || !password) {
                 alert('请输入用户名和密码');
             } else {
-                alert('用户名或密码错误！\n正确账号: admin\n正确密码: muen778@');
+                alert('用户名或密码错误');
             }
         });
     }

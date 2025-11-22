@@ -46,7 +46,7 @@ const server = http.createServer((req, res) => {
         const form = formidable({
             uploadDir: VIDEOS_DIR,
             keepExtensions: true,
-            maxFileSize: 500 * 1024 * 1024 // 500MB
+            maxFileSize: 10 * 1024 * 1024 // 10MB for local testing
         });
 
         form.parse(req, (err, fields, files) => {

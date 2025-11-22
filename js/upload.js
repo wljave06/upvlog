@@ -1,4 +1,7 @@
 // Upload functionality
+// Note: For local testing with small videos (<10MB)
+// Videos are uploaded to /videos folder via Node.js server
+
 let selectedFile = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -60,10 +63,10 @@ function handleFileSelect(e) {
 }
 
 function handleFile(file) {
-    // Check file size (500MB limit)
-    const maxSize = 500 * 1024 * 1024;
+    // Check file size (10MB limit for local testing)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-        alert('文件大小超过500MB限制');
+        alert('文件大小超过10MB限制');
         return;
     }
     
