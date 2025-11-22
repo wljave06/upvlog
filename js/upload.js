@@ -191,6 +191,7 @@ async function saveVideo(title, description, category, visibility) {
         
         const result = await response.json();
         video.url = result.url; // Get uploaded video URL from server
+        video.publicUrl = result.publicUrl; // Get public access URL
         
         // Get existing videos
         const videos = JSON.parse(localStorage.getItem('videos') || '[]');
@@ -199,8 +200,24 @@ async function saveVideo(title, description, category, visibility) {
         // Save metadata to localStorage
         localStorage.setItem('videos', JSON.stringify(videos));
         
-        // Show success and redirect
-        alert('视频上传成功！');
+        // Show success with public URL
+        const message = `视频上传成功！
+
+公开访问地址：
+${result.publicUrl}
+
+点击确定跳转到视频列表`;
+        alert(message);
+        
+        // Copy URL to clipboard if available
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(result.publicUrl).then(() => {
+                console.log('公开URL已复制到剪贴板:', result.publicUrl);
+            }).catch(err => {
+                console.log('无法复制到剪贴板:', err);
+            });
+        }
+        
         window.location.href = 'dashboard.html';
         
     } catch (error) {

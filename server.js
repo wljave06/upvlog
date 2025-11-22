@@ -52,6 +52,7 @@ const server = http.createServer((req, res) => {
 
         form.parse(req, (err, fields, files) => {
             if (err) {
+                console.error('Upload error:', err);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Upload failed', message: err.message }));
                 return;
@@ -64,25 +65,37 @@ const server = http.createServer((req, res) => {
                 return;
             }
 
-            const videoId = fields.videoId;
-            const oldPath = videoFile.filepath;
-            const extension = path.extname(videoFile.originalFilename || videoFile.name);
+            // Handle both array and string for videoId
+            const videoId = Array.isArray(fields.videoId) ? fields.videoId[0] : fields.videoId;
+            
+            // Handle both array and object for video file
+            const videoFileObj = Array.isArray(videoFile) ? videoFile[0] : videoFile;
+            const oldPath = videoFileObj.filepath;
+            const extension = path.extname(videoFileObj.originalFilename || videoFileObj.name);
             const newFilename = `${videoId}${extension}`;
             const newPath = path.join(VIDEOS_DIR, newFilename);
 
             // Move file to proper location
             fs.rename(oldPath, newPath, (err) => {
                 if (err) {
+                    console.error('File move error:', err);
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: 'Failed to save file', message: err.message }));
                     return;
                 }
 
+                // Return full public URL
+                const publicUrl = `http://localhost:${PORT}/videos/${newFilename}`;
+                console.log(`✅ Video uploaded: ${newFilename}`);
+                console.log(`📺 Public URL: ${publicUrl}`);
+                
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     success: true,
                     url: `/videos/${newFilename}`,
-                    filename: newFilename
+                    publicUrl: publicUrl,
+                    filename: newFilename,
+                    message: 'Upload successful'
                 }));
             });
         });
