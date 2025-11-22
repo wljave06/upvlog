@@ -173,56 +173,61 @@ async function saveVideo(title, description, category, visibility) {
         thumbnail: ''
     };
     
+    // Upload to server for public access
+    const formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('videoId', videoId);
+    formData.append('title', title);
+    formData.append('description', description);
+    
     try {
-        // For Cloudflare Pages: Store video in IndexedDB
-        const reader = new FileReader();
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
         
-        reader.onload = async function(e) {
-            video.url = e.target.result;
-            
-            // Save video data and metadata to IndexedDB (avoid localStorage quota)
-            try {
-                const db = await openVideoDatabase();
-                await saveToIndexedDB(db, videoId, e.target.result);
-                
-                // Save metadata separately in IndexedDB
-                await saveVideoMetadata(db, video);
-                
-            } catch (dbError) {
-                console.error('Storage error:', dbError);
-                alert('存储空间不足或浏览器不支持。请尝试：\n1. 清理浏览器缓存\n2. 使用更小的视频文件');
-                return;
-            }
-            
-            // Generate shareable URL
-            const shareUrl = `${window.location.origin}/player.html?id=${videoId}`;
-            
-            // Show success with share URL
-            const message = `视频上传成功！
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || 'Upload failed');
+        }
+        
+        const result = await response.json();
+        
+        // Save metadata to IndexedDB with public URL
+        video.url = result.videoUrl; // Relative path: /videos/xxx.mp4
+        video.publicUrl = result.publicUrl; // Full public URL
+        
+        const db = await openVideoDatabase();
+        await saveVideoMetadata(db, video);
+        
+        // Show success with public .mp4 URL
+        const message = `视频上传成功！
 
-分享链接：
-${shareUrl}
+公开访问地址（.mp4文件）：
+${result.publicUrl}
 
 点击确定跳转到视频列表`;
-            alert(message);
-            
-            // Copy URL to clipboard
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareUrl).catch(() => {});
-            }
-            
+        alert(message);
+        
+        // Copy URL to clipboard
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(result.publicUrl).catch(() => {});
+        }
+        
+        setTimeout(() => {
             window.location.href = 'dashboard.html';
-        };
-        
-        reader.onerror = function() {
-            alert('读取视频文件失败');
-        };
-        
-        reader.readAsDataURL(selectedFile);
+        }, 500);
         
     } catch (error) {
         console.error('Upload error:', error);
-        alert('上传失败: ' + error.message);
+        alert('上传失败: ' + error.message + '\n\n请确保：\n1. 本地运行: npm start\n2. 或在Cloudflare Pages配置Functions');
+        
+        // Reset UI
+        const uploadBtn = document.getElementById('uploadBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        uploadBtn.disabled = false;
+        cancelBtn.disabled = false;
+        document.getElementById('uploadProgress').style.display = 'none';
     }
 }
 

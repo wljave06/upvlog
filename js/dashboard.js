@@ -49,17 +49,32 @@ async function loadVideos() {
             `;
         } else {
             videoGrid.innerHTML = videos.map(video => `
-                <div class="video-card" onclick="playVideo('${video.id}')">
-                    <div class="video-thumbnail">
+                <div class="video-card">
+                    <div class="video-thumbnail" onclick="playVideo('${video.id}')" style="cursor: pointer;">
                         <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/6366f1/ffffff?text=Video'}" alt="${video.title}">
                         <span class="video-duration">${video.duration || '00:00'}</span>
                     </div>
                     <div class="video-card-info">
-                        <h3 class="video-card-title">${video.title}</h3>
+                        <h3 class="video-card-title" onclick="playVideo('${video.id}')" style="cursor: pointer;">${video.title}</h3>
                         <div class="video-card-meta">
                             <span>${video.views || 0} 次播放</span>
                             <span>${formatDate(video.uploadDate)}</span>
                         </div>
+                        ${video.publicUrl ? `
+                        <div class="video-public-url" style="margin-top: 8px; padding: 8px; background: #f3f4f6; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <input type="text" value="${video.publicUrl}" readonly 
+                                    style="flex: 1; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 12px; background: white;"
+                                    onclick="this.select()">
+                                <button onclick="copyUrl(event, '${video.publicUrl}')" 
+                                    style="padding: 6px 12px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;"
+                                    onmouseover="this.style.background='#4f46e5'" 
+                                    onmouseout="this.style.background='#6366f1'">
+                                    复制链接
+                                </button>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
@@ -187,4 +202,29 @@ function getAllVideos(db) {
         request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
     });
+}
+
+// Copy URL to clipboard
+function copyUrl(event, url) {
+    event.stopPropagation(); // Prevent triggering video play
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            // Show success feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ 已复制';
+            btn.style.background = '#10b981';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#6366f1';
+            }, 2000);
+        }).catch(err => {
+            alert('复制失败，请手动复制：\n' + url);
+        });
+    } else {
+        // Fallback for older browsers
+        alert('链接地址：\n' + url);
+    }
 }

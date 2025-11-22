@@ -38,14 +38,23 @@ async function loadVideo(videoId) {
         // Load video source
         const mainPlayer = document.getElementById('mainPlayer');
         
-        // Load from IndexedDB
-        const videoData = await loadVideoData(db, videoId);
-        if (videoData) {
-            mainPlayer.src = videoData;
-        } else if (video.url) {
+        // Priority: publicUrl (direct .mp4) > url (relative path) > IndexedDB
+        if (video.publicUrl) {
+            // Use public .mp4 URL directly
+            mainPlayer.src = video.publicUrl;
+        } else if (video.url && video.url.startsWith('/videos/')) {
+            // Use relative path for server-stored videos
             mainPlayer.src = video.url;
         } else {
-            mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
+            // Fallback to IndexedDB for old videos
+            const videoData = await loadVideoData(db, videoId);
+            if (videoData) {
+                mainPlayer.src = videoData;
+            } else if (video.url) {
+                mainPlayer.src = video.url;
+            } else {
+                mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
+            }
         }
         
         // Update view count
