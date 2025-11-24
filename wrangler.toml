@@ -10,7 +10,7 @@ bucket_name = "vlog-videos"
 # KV namespace for video metadata
 [[kv_namespaces]]
 binding = "VIDEO_METADATA"
-id = "your-kv-namespace-id"
+id = "135904286bb04fbdb9f27efd36c82977"
 
 # Environment variables
 [vars]
