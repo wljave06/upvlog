@@ -20,8 +20,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadVideo(videoId) {
     try {
-        const db = await openVideoDatabase();
-        const video = await getVideoMetadata(db, videoId);
+        let video = null;
+        
+        // First try to load from cloud (KV)
+        try {
+            const cloudResponse = await fetch('/api/videos');
+            if (cloudResponse.ok) {
+                const data = await cloudResponse.json();
+                const videos = data.videos || [];
+                video = videos.find(v => v.id === videoId);
+            }
+        } catch (cloudError) {
+            console.error('Cloud load error:', cloudError);
+        }
+        
+        // Fallback to IndexedDB if cloud fails
+        if (!video) {
+            const db = await openVideoDatabase();
+            video = await getVideoMetadata(db, videoId);
+        }
         
         if (!video) {
             document.getElementById('videoTitle').textContent = '未找到视频';
@@ -47,6 +64,7 @@ async function loadVideo(videoId) {
             mainPlayer.src = video.url;
         } else {
             // Fallback to IndexedDB for old videos
+            const db = await openVideoDatabase();
             const videoData = await loadVideoData(db, videoId);
             if (videoData) {
                 mainPlayer.src = videoData;
@@ -54,19 +72,38 @@ async function loadVideo(videoId) {
                 mainPlayer.src = video.url;
             } else {
                 mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
+                return;
             }
         }
         
         // Update view count
         video.views = (video.views || 0) + 1;
-        await updateVideoMetadata(db, video);
+        
+        // Save to cloud (KV)
+        try {
+            await fetch('/api/videos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(video)
+            });
+        } catch (kvError) {
+            console.error('KV update error:', kvError);
+        }
+        
+        // Also update IndexedDB
+        try {
+            const db = await openVideoDatabase();
+            await updateVideoMetadata(db, video);
+        } catch (dbError) {
+            console.error('IndexedDB update error:', dbError);
+        }
         
         // Update view display
         document.getElementById('videoViews').textContent = video.views + ' 次播放';
     } catch (error) {
         console.error('Error loading video:', error);
         document.getElementById('videoTitle').textContent = '加载视频失败';
-        document.getElementById('videoDescription').textContent = '请检查浏览器存储权限';
+        document.getElementById('videoDescription').textContent = '请检查浏览器存储权限或网络连接';
     }
 }
 
@@ -133,8 +170,38 @@ function openVideoDatabase() {
     });
 }
 
-function loadRelatedVideos(currentVideoId) {
-    const videos = JSON.parse(localStorage.getItem('videos') || '[]');
+async function loadRelatedVideos(currentVideoId) {
+    let videos = [];
+    
+    // Try to load from cloud first
+    try {
+        const cloudResponse = await fetch('/api/videos');
+        if (cloudResponse.ok) {
+            const data = await cloudResponse.json();
+            videos = data.videos || [];
+        }
+    } catch (error) {
+        console.error('Cloud load error:', error);
+    }
+    
+    // Fallback to IndexedDB
+    if (videos.length === 0) {
+        try {
+            const db = await openVideoDatabase();
+            const transaction = db.transaction(['metadata'], 'readonly');
+            const store = transaction.objectStore('metadata');
+            const request = store.getAll();
+            
+            videos = await new Promise((resolve) => {
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => resolve([]);
+            });
+        } catch (error) {
+            console.error('IndexedDB load error:', error);
+        }
+    }
+    
+    // Filter and display related videos
     const relatedVideos = videos.filter(v => v.id !== currentVideoId).slice(0, 10);
     
     const relatedContainer = document.getElementById('relatedVideos');
