@@ -7,6 +7,11 @@ pages_build_output_dir = "."
 binding = "VLOG_VIDEOS"
 bucket_name = "vlog-videos"
 
+# KV namespace for video metadata
+[[kv_namespaces]]
+binding = "VIDEO_METADATA"
+id = "your-kv-namespace-id"
+
 # Environment variables
 [vars]
 R2_PUBLIC_DOMAIN = "https://pub-your-r2-domain.r2.dev"

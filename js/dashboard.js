@@ -30,12 +30,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadVideos() {
     try {
+        // First try to load from cloud (KV)
+        const cloudResponse = await fetch('/api/videos');
+        if (cloudResponse.ok) {
+            const data = await cloudResponse.json();
+            const videos = data.videos || [];
+            
+            // Sync to IndexedDB for offline access
+            try {
+                const db = await openVideoDatabase();
+                for (const video of videos) {
+                    await saveVideoMetadata(db, video);
+                }
+            } catch (dbError) {
+                console.error('IndexedDB sync error:', dbError);
+            }
+            
+            renderVideos(videos);
+            return;
+        }
+    } catch (error) {
+        console.error('Cloud load error:', error);
+    }
+    
+    // Fallback to IndexedDB if cloud fails
+    try {
         const db = await openVideoDatabase();
         const videos = await getAllVideos(db);
-        
-        const videoGrid = document.getElementById('videoGrid');
-        
-        if (videos.length === 0) {
+        renderVideos(videos);
+    } catch (error) {
+        console.error('Error loading videos:', error);
+        // Final fallback to localStorage
+        loadVideosFromLocalStorage();
+    }
+}
+
+function renderVideos(videos) {
+    const videoGrid = document.getElementById('videoGrid');
+    
+    if (videos.length === 0) {
             videoGrid.innerHTML = `
                 <div class="empty-state">
                     <svg width="100" height="100" fill="none" viewBox="0 0 100 100">
@@ -87,11 +120,6 @@ async function loadVideos() {
                 </div>
             `).join('');
         }
-    } catch (error) {
-        console.error('Error loading videos:', error);
-        // Fallback to localStorage
-        loadVideosFromLocalStorage();
-    }
 }
 
 function loadVideosFromLocalStorage() {
@@ -220,6 +248,21 @@ function getAllVideos(db) {
     });
 }
 
+function saveVideoMetadata(db, video) {
+    return new Promise((resolve, reject) => {
+        try {
+            const transaction = db.transaction(['metadata'], 'readwrite');
+            const store = transaction.objectStore('metadata');
+            const request = store.put(video);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        } catch (error) {
+            resolve(); // Ignore errors if store doesn't exist
+        }
+    });
+}
+
 // Copy URL to clipboard
 function copyUrl(event, url) {
     event.stopPropagation(); // Prevent triggering video play
@@ -254,6 +297,20 @@ async function deleteVideo(event, videoId) {
     }
     
     try {
+        // Delete from cloud (KV + R2)
+        try {
+            const response = await fetch(`/api/videos?id=${videoId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                console.error('Cloud delete failed');
+            }
+        } catch (cloudError) {
+            console.error('Cloud delete error:', cloudError);
+        }
+        
+        // Also delete from local IndexedDB
         const db = await openVideoDatabase();
         
         // Delete from metadata store
@@ -261,9 +318,6 @@ async function deleteVideo(event, videoId) {
         
         // Delete from videos store (IndexedDB stored videos)
         await deleteFromStore(db, 'videos', videoId);
-        
-        // Note: Videos stored in R2 cannot be deleted from client-side
-        // You would need a backend API to delete from R2
         
         // Reload the page to refresh the video list
         alert('视频已删除！');

@@ -201,6 +201,19 @@ async function saveVideo(title, description, category, visibility) {
         video.url = result.videoUrl; // Relative path: /videos/xxx.mp4
         video.publicUrl = result.publicUrl; // Full public URL
         
+        // Save to cloud (KV) for persistence
+        try {
+            await fetch('/api/videos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(video)
+            });
+        } catch (kvError) {
+            console.error('KV save error:', kvError);
+            // Continue even if KV save fails
+        }
+        
+        // Also save to IndexedDB as local cache
         const db = await openVideoDatabase();
         await saveVideoMetadata(db, video);
         
