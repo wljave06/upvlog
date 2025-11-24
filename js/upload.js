@@ -160,8 +160,9 @@ async function saveVideo(title, description, category, visibility) {
     // Create video object
     const videoId = 'video_' + Date.now();
     
-    // Generate thumbnail from video
+    // Generate thumbnail and get duration from video
     const thumbnail = await generateVideoThumbnail(selectedFile);
+    const duration = await getVideoDuration(selectedFile);
     
     const video = {
         id: videoId,
@@ -173,7 +174,7 @@ async function saveVideo(title, description, category, visibility) {
         size: selectedFile.size,
         uploadDate: new Date().toISOString(),
         views: 0,
-        duration: '00:00',
+        duration: duration,
         thumbnail: thumbnail
     };
     
@@ -336,6 +337,36 @@ function generateVideoThumbnail(file) {
         video.onerror = function() {
             console.error('Video load error');
             resolve(''); // Return empty string on error
+        };
+        
+        // Load video file
+        video.src = URL.createObjectURL(file);
+    });
+}
+
+// Get video duration
+function getVideoDuration(file) {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        
+        video.onloadedmetadata = function() {
+            const duration = video.duration;
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration % 60);
+            const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Clean up
+            URL.revokeObjectURL(video.src);
+            
+            resolve(formatted);
+        };
+        
+        video.onerror = function() {
+            console.error('Video duration error');
+            resolve('00:00');
         };
         
         // Load video file

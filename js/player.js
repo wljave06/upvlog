@@ -55,22 +55,43 @@ async function loadVideo(videoId) {
         // Load video source
         const mainPlayer = document.getElementById('mainPlayer');
         
+        console.log('Video metadata:', video);
+        console.log('publicUrl:', video.publicUrl);
+        console.log('url:', video.url);
+        
         // Priority: publicUrl (direct .mp4) > url (relative path) > IndexedDB
         if (video.publicUrl) {
             // Use public .mp4 URL directly
+            console.log('Using publicUrl:', video.publicUrl);
             mainPlayer.src = video.publicUrl;
+            
+            // Add error handler
+            mainPlayer.onerror = function(e) {
+                console.error('Video load error:', e);
+                console.error('Failed URL:', mainPlayer.src);
+                alert('视频加载失败！\n\nURL: ' + video.publicUrl + '\n\n请检查：\n1. R2 公开域名是否配置正确\n2. 视频文件是否上传成功\n3. 浏览器控制台查看详细错误');
+            };
+            
+            mainPlayer.onloadeddata = function() {
+                console.log('Video loaded successfully');
+            };
         } else if (video.url && video.url.startsWith('/videos/')) {
             // Use relative path for server-stored videos
+            console.log('Using relative url:', video.url);
             mainPlayer.src = video.url;
         } else {
             // Fallback to IndexedDB for old videos
+            console.log('Trying IndexedDB...');
             const db = await openVideoDatabase();
             const videoData = await loadVideoData(db, videoId);
             if (videoData) {
+                console.log('Using IndexedDB data');
                 mainPlayer.src = videoData;
             } else if (video.url) {
+                console.log('Using fallback url:', video.url);
                 mainPlayer.src = video.url;
             } else {
+                console.error('No video source available');
                 mainPlayer.innerHTML = '<p style="color: white; padding: 20px;">视频文件未找到</p>';
                 return;
             }
